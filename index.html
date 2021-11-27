@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)https://mcbeeringi.github.io/apps/mc/poly.html -->
+<html lang="en" dir="ltr">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <title>POT</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+
+<script type="text/javascript" src="jquery-1.9.1.js"></script>
+<script src="funcs.js"></script>
+
+<body>
+
+    <style>
+        :root,
+        textarea,
+        input {
+            background-color: #222;
+            color: #fff;
+            font-family: menlo, monospace;
+        }
+
+        .box {
+            background-color: #333;
+            padding: 4px;
+            font-size: 13px;
+        }
+
+        a:link,
+        a:visited {
+            color: #aef;
+        }
+
+        a:link:hover {
+            color: #8af;
+        }
+
+        a:link:active {
+            color: #48f;
+        }
+
+        h1,
+        h2 {
+            padding: 0rem 1rem;
+            border-left: 4px solid #000;
+        }
+
+        textarea {
+            background-color: #0000;
+            line-height: 14px;
+            min-height: 192px;
+            width: calc(100% - 8px);
+            overflow: scroll;
+            resize: vertical;
+        }
+
+        #log {
+            line-height: 14px;
+            max-height: 448px;
+            overflow: scroll;
+            background-color: #333;
+        }
+
+        input:not([type=radio]) {
+            background-color: #0000;
+            display: inline-block;
+            border: none;
+            border-bottom: 2px solid #888;
+            border-radius: 0;
+            min-width: 20em;
+            max-width: 100%;
+            outline: none;
+            transition: .2s;
+        }
+
+        input:not([type=radio]):focus {
+            border-bottom-color: #48fc;
+        }
+
+        button {
+            background-color: rgb(209, 209, 209);
+            padding: 0px;
+            border-radius: 2px;
+            user-select: none;
+            -webkit-user-select: none;
+            display: inline-block;
+        }
+
+        .button:active {
+            background-color: #48fc;
+        }
+    </style>
+
+
+    <h1>POT</h1>
+    <div class="box">
+        <h2>☆いんふぉめーしょん☆</h2>
+        <br>ppcのそーすを滅茶苦茶にしてくれます
+        <br>(POTとわppc obfuscator toolの略です)
+        <br>
+        <textarea name="resultt" id="" cols="30" rows="6" hidden=true></textarea>
+    </div>
+    <br>
+    <div class="box">
+        <h2>main</h2>
+        <table border="1" cellpadding="5" cellspacing="0" bgcolor="#222" style="width: calc(100% - 8px);">
+            <tbody>
+                <tr>
+                    <td>Input</td>
+                    <td>Output</td>
+                </tr>
+                <tr>
+                    <td><textarea id=input wrap="off" rows=40 spellcheck="false"></textarea></td>
+                    <td><textarea id=out wrap="off" rows=40 spellcheck="false"></textarea></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <button onclick="conv()">変換</button>
+    </div>
+</body>
+
+<script>
+    // Enterキー押下時、送信処理が実行する
+    window.document.onkeydown = function (event) {
+        if (event.key === 'Enter') {
+            conv();
+        }
+    }
+
+    function manualLowercase(s) {
+        return s.replace(/[A-Z]/g, function (ch) { return String.fromCharCode(ch.charCodeAt(0) | 32); });
+    };
+    function manualUppercase(s) {
+        return s.replace(/[a-z]/g, function (ch) { return String.fromCharCode(ch.charCodeAt(0) & ~32); });
+    };
+
+    function zeroPadding(NUM, LEN) {
+        return (Array(LEN).join('0') + NUM).slice(-LEN);
+    }
+
+    let labels = [];
+    function conv() {
+        labels = [];
+        out.value = ""
+        let text = input.value;
+
+        let opes = text.split("\n");
+
+        let result = { calls: [] };
+
+        for (let i = 0; i < opes.length; i++) {
+            if (getN(opes[i])[0] == "mtctr") {
+                let t = { register: "", addr: "", funcname: "unkown", index: -1 };
+                var register = opes[i].split(" ")[1];
+                t.register = register;
+                t.index = i;
+
+                var ua = 0;
+                var ub = 0;
+
+                var ii = 1;
+                while (getN(opes[i - ii])[0] != "lis"
+                    || getN(opes[i - ii])[1] != register) {
+                    ii++;
+                    if (i - ii == -1) {
+                        break;
+                    }
+                }
+                console.log(i - ii);
+                if (i - ii > -1) {
+                    ua = parseInt(getN(opes[i - ii])[2]);
+                }
+                var ii = 1;
+                while (getN(opes[i - ii])[0] != "ori"
+                    || getN(opes[i - ii])[1] != register) {
+                    ii++;
+                    if (i - ii == -1) {
+                        break;
+                    }
+                }
+                console.log(i - ii);
+                if (i - ii > -1) {
+                    ub = parseInt(getN(opes[i - ii])[3]);
+                }
+                t.addr = zeroPadding(manualUppercase((ua * 0x10000 + ub).toString(16)), 8);
+                console.log(t.addr);
+                t.funcname = funcs.find((u) => u.addr == t.addr);
+
+                result.calls.push(t);
+            }
+        }
+
+        opes = text.split("\n");
+
+
+        for (let i = 0; i < opes.length; i++) {
+            if (getN(opes[i]).length != 1) {
+                if (Math.random() < 0.5 && i > 3) {
+                    var tr = Math.floor(Math.random() * (30));
+                    out.value += `cmpl cr6, r${tr}, r${tr}\n`;//Anytime true
+
+                    if (Math.random() < 0.05) { out.value += `addi r13, r13,${Math.floor(Math.random() * (0x1000))}\n`; }
+                    if (Math.random() < 0.05) { out.value += `subi r13, r13,${Math.floor(Math.random() * (0x1000))}\n`; }
+                    if (Math.random() < 0.05) { out.value += `mulli r13, r13,${Math.floor(Math.random() * (0x1000))}\n`; }
+                    if (Math.random() < 0.05) { out.value += `xori r13, r13,${Math.floor(Math.random() * (0x1000))}\n`; }
+                    if (Math.random() < 0.05) { out.value += `xor r13, r${Math.floor(Math.random() * (30))},r${Math.floor(Math.random() * (30))}\n`; }
+                    if (Math.random() < 0.7 && labels.length > 0) { out.value += `${uselabel()}:\n` };
+                    if (Math.random() < 0.7 ) {out.value += `bne cr6,${addlabel()}\n`;};
+                    if (Math.random() < 0.1) {
+                        let tlabel = `__${Math.floor(Math.random() * (0xFFFFFFFF))}`
+
+                        out.value += `beq cr6, ${tlabel}\n`;
+
+                        let addr = funcs[Math.floor(Math.random() * (funcs.length-1))].addr
+                        if (addr&&Math.random() < 0.5) {
+                            var atr = Math.floor(Math.random() * (30));
+                            out.value += `lis r${atr}, 0x${addr.match(/.{4}/g)[0]}\n`;
+                            out.value += `ori r${atr}, r${atr}, 0x${addr.match(/.{4}/g)[1]}\n`;
+                            out.value += `mtctr r${atr}\n`;
+                            argumentslen = Math.floor(Math.random() * (3));
+                            for(let iii=0;iii<argumentslen;iii++){
+                                out.value += `li r${iii}, ${Math.floor(Math.random() * 0x10)}\n`;
+                            }
+                            out.value += `bctrl\n`;
+                        }
+                        if (Math.random() < 0.5) {out.value += `eieio\n`;};
+                        if (Math.random() < 0.5 && labels.length > 0) { out.value += `${uselabel()}:\n` };
+                        if (Math.random() < 0.5 ) { out.value += `bne cr6,${addlabel()}\n` };
+                        
+                        out.value += `${tlabel}:\n`;
+                    }
+
+                    
+                }
+                if (getN(opes[i])[0] == "li") {
+                    let register = getN(opes[i])[1];
+                    let r = Math.floor(Math.random() * (1)) + 1;
+                    for (let it = 0; it < r; it++) {
+                        out.value += "li " + register + "," + Math.floor(Math.random() * (0x8000)) + "\n";
+                    }
+                }
+
+            }
+            out.value += opes[i] + "\n";
+        }
+        for (let t of labels) {
+            out.value += `${t}:\n`;
+        }
+        out.value = out.value.replace(/[A-Z]/g, function (ch) { return String.fromCharCode(ch.charCodeAt(0) | 32); });
+
+    };
+
+    function addlabel() {
+        let t = `_${Math.floor(Math.random() * (0xFFFFFFFF))}`
+        labels.push(t)
+        return t;
+    }
+
+    function uselabel() {
+        let t = labels[0];
+        labels.shift();
+        return t;
+    }
+
+    function getN(t) {
+        return t.split(/[ ,]/);
+    }
+
+    function conv2() {
+        let file = finp.files[0];
+        const reader = new FileReader();
+        reader.readAsText(file);
+
+        reader.onload = function () {
+            let text = reader.result;
+            let resultText = [];
+            let lines = text.split("\n");
+
+            for (let i = 0; i < lines.length - 1; i++) {
+                let code = lines[i]
+                let u = code.split("  ").filter(function (x, i, self) { return self[i] != ""; })
+                if (u.length == 3) {
+                    let uu = u[2].split(" ").filter(function (x, i, self) { return self[i] != ""; })
+                    let t = { function: u[0], addr: uu[0], length: uu[1], type: u[1] }
+                    resultText.push(t)
+                    console.log(u)
+                }
+
+            }
+            console.log(resultText)
+            let blob = new Blob([JSON.stringify(resultText, null, "\t")], { type: "application/json" });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'model.json';
+            link.click();
+        }
+    }
+</script>
+
+</html>
